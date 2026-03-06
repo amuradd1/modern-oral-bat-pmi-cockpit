@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Modern Oral Competitor Cockpit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main>
+      <section class="hero fade-in">
+        <h1>Modern Oral Competitor Cockpit</h1>
+        <p id="hero-focus"></p>
+        <p id="hero-caveat"></p>
+        <div class="meta-row">
+          <span class="meta-pill">Lead focus: PMI</span>
+          <span class="meta-pill">Comparison scope: BAT vs PMI</span>
+          <span class="meta-pill">Data freshness: <span id="as-of-date"></span></span>
+        </div>
+      </section>
+
+      <section class="panel workspace-bar fade-in d2">
+        <div class="tab-switch">
+          <button class="tab-btn active" data-target="pmi-view">PMI Deep Dive</button>
+          <button class="tab-btn" data-target="compare-view">BAT vs PMI Comparison</button>
+        </div>
+        <div class="export-actions">
+          <button id="export-csv" class="action-btn">Export CSV</button>
+          <button id="export-ppt" class="action-btn">Export PowerPoint</button>
+        </div>
+      </section>
+
+      <section id="pmi-view" class="tab-view active">
+        <section class="grid kpi-grid" id="kpi-grid"></section>
+
+        <section class="grid metrics-grid">
+          <article class="panel fade-in d2">
+            <h2 class="panel-title">PMI Nicotine Pouch Volume Trajectory</h2>
+            <p class="panel-subtitle">
+              PMI global nicotine pouch shipments (million cans / can-equivalent units).
+            </p>
+            <div style="height: 330px">
+              <canvas id="volume-chart" aria-label="Nicotine pouch volume chart" role="img"></canvas>
+            </div>
+            <p class="muted" id="volume-chart-fallback"></p>
+          </article>
+
+          <article class="panel fade-in d3">
+            <h2 class="panel-title">PMI Trade-Flow Signals</h2>
+            <p class="panel-subtitle">
+              Mix of company-level customs indicators and macro HS-code trade context.
+            </p>
+            <div id="trade-signals" class="trade-list"></div>
+          </article>
+        </section>
+
+        <section class="grid map-grid">
+          <article class="panel fade-in d2">
+            <h2 class="panel-title">PMI Factory and Footprint Map</h2>
+            <p class="panel-subtitle">
+              Publicly identified PMI smoke-free sites plus Swedish Match manufacturing footprint marker.
+            </p>
+            <div id="factory-map"></div>
+          </article>
+
+          <article class="panel fade-in d3">
+            <h2 class="panel-title">PMI Factory Evidence Log</h2>
+            <p class="panel-subtitle">Confidence reflects source specificity and directness.</p>
+            <div id="factory-list" class="factory-list"></div>
+          </article>
+        </section>
+
+        <section class="panel fade-in d2" style="margin-top: 16px">
+          <h2 class="panel-title">PMI Raw Material Sourcing Matrix</h2>
+          <p class="panel-subtitle">
+            Includes resin, nicotine liquid/salt, MCC, and fleece/nonwoven. Unknowns are explicitly flagged.
+          </p>
+          <div class="material-table-wrap">
+            <table class="material-table">
+              <thead>
+                <tr>
+                  <th>Material</th>
+                  <th>Use In Pouch</th>
+                  <th>PMI / Product Disclosure</th>
+                  <th>Likely Source Countries</th>
+                  <th>Evidence</th>
+                  <th>Confidence</th>
+                </tr>
+              </thead>
+              <tbody id="materials-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="compare-view" class="tab-view">
+        <section class="grid kpi-grid" id="competitor-card-grid"></section>
+
+        <section class="grid metrics-grid">
+          <article class="panel fade-in d2">
+            <h2 class="panel-title">Four-Year Volume Horizon (2022-2025)</h2>
+            <p class="panel-subtitle">
+              Dual-axis view because PMI discloses million cans while BAT discloses billion pouches.
+            </p>
+            <div style="height: 320px">
+              <canvas id="compare-volume-chart" aria-label="BAT vs PMI volume horizon" role="img"></canvas>
+            </div>
+            <p class="muted" id="compare-volume-fallback"></p>
+          </article>
+
+          <article class="panel fade-in d3">
+            <h2 class="panel-title">Growth Index (2023 = 100)</h2>
+            <p class="panel-subtitle">
+              Indexed comparison to extend trend horizon while neutralizing unit differences.
+            </p>
+            <div style="height: 320px">
+              <canvas id="compare-growth-chart" aria-label="BAT vs PMI growth index" role="img"></canvas>
+            </div>
+            <p class="muted" id="compare-growth-fallback"></p>
+          </article>
+        </section>
+
+        <section class="grid metrics-grid">
+          <article class="panel fade-in d2">
+            <h2 class="panel-title">Input Price Volatility (12M / 24M)</h2>
+            <p class="panel-subtitle" id="input-volatility-method"></p>
+            <div style="height: 300px">
+              <canvas id="input-volatility-chart" aria-label="Input volatility chart" role="img"></canvas>
+            </div>
+            <p class="muted" id="input-volatility-fallback"></p>
+          </article>
+
+          <article class="panel fade-in d3">
+            <h2 class="panel-title">Volatility Interpretation</h2>
+            <p class="panel-subtitle">
+              Public index proxies for sourcing risk scanning. Risk signal is based on 24M annualized volatility.
+            </p>
+            <div id="input-volatility-cards" class="trade-list"></div>
+          </article>
+        </section>
+
+        <section class="panel fade-in d3" style="margin-top: 16px">
+          <h2 class="panel-title">Comparator Disclosure Caveat</h2>
+          <p class="panel-subtitle" id="comparator-caveat"></p>
+          <div id="comparator-disclosure-list" class="trade-list"></div>
+        </section>
+
+        <section class="grid map-grid">
+          <article class="panel fade-in d2">
+            <h2 class="panel-title">BAT vs PMI Factory Signal Map</h2>
+            <p class="panel-subtitle">
+              Site markers reflect publicly identifiable oral-related locations and confidence levels.
+            </p>
+            <div id="competitor-map"></div>
+          </article>
+
+          <article class="panel fade-in d3">
+            <h2 class="panel-title">Site Evidence Log</h2>
+            <p class="panel-subtitle">Listed by company with confidence and source links.</p>
+            <div id="competitor-site-list" class="factory-list"></div>
+          </article>
+        </section>
+
+        <section class="panel fade-in d2" style="margin-top: 16px">
+          <h2 class="panel-title">BAT vs PMI Strategic Comparison Matrix</h2>
+          <p class="panel-subtitle">
+            Includes disclosed volume, growth, footprint, operations, material disclosure and sourcing transparency.
+          </p>
+          <div class="material-table-wrap">
+            <table class="material-table comparator-table">
+              <thead>
+                <tr>
+                  <th>Company</th>
+                  <th>Core Brand</th>
+                  <th>2025 Oral Volume</th>
+                  <th>Growth</th>
+                  <th>Market Footprint</th>
+                  <th>Factory / Operations Signal</th>
+                  <th>Material Disclosure</th>
+                  <th>Sourcing Transparency</th>
+                  <th>Confidence</th>
+                </tr>
+              </thead>
+              <tbody id="comparison-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel fade-in d2" style="margin-top: 16px">
+          <h2 class="panel-title">Raw Material / Input Comparison: PMI vs BAT</h2>
+          <p class="panel-subtitle">
+            Side-by-side ingredient/input disclosures for nicotine, filler substrate, pouch media, flavors, water/pH, and packaging resin.
+          </p>
+          <div class="material-table-wrap">
+            <table class="material-table comparator-table">
+              <thead>
+                <tr>
+                  <th>Input Family</th>
+                  <th>PMI (ZYN / PMI disclosures)</th>
+                  <th>BAT (VELO / BAT disclosures)</th>
+                  <th>Implication</th>
+                  <th>Sources</th>
+                </tr>
+              </thead>
+              <tbody id="input-comparison-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel fade-in d2" style="margin-top: 16px">
+          <h2 class="panel-title">Input Volatility Table (Public Proxy Series)</h2>
+          <p class="panel-subtitle">
+            Latest available month and trailing 12M/24M annualized volatility for each input proxy.
+          </p>
+          <div class="material-table-wrap">
+            <table class="material-table comparator-table">
+              <thead>
+                <tr>
+                  <th>Input</th>
+                  <th>Proxy Series</th>
+                  <th>Series Code</th>
+                  <th>Latest Index</th>
+                  <th>YoY %</th>
+                  <th>12M Vol %</th>
+                  <th>24M Vol %</th>
+                  <th>Risk Signal</th>
+                  <th>Sources</th>
+                </tr>
+              </thead>
+              <tbody id="input-volatility-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel fade-in d3" style="margin-top: 16px">
+        <h2 class="panel-title">Source Register</h2>
+        <p class="panel-subtitle">
+          Click source IDs from cards/tables to jump here. Links open in a new tab.
+        </p>
+        <div id="sources-list" class="source-list"></div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    <script src="/pmi-data.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
